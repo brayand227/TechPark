@@ -62,11 +62,5 @@ public class Atraccion {
     private List<ColaVirtual> colaVirtual = new ArrayList<>();
 }
 
-// Enums
-enum TipoAtraccion {
-    MECANICA, ACUATICA, INFANTIL, SHOW
-}
 
-enum EstadoAtraccion {
-    ACTIVA, MANTENIMIENTO, CERRADA
-}
+
