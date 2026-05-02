@@ -176,7 +176,7 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
             else if (nodo.derecho == null) {
                 return nodo.izquierdo;
             }
-            // Caso 3: Dos hijos - encontrar el sucesor in-order (el mínimo del subárbol derecho)
+            // Caso 3: Dos hijos - encontrar el sucesor in-order
             else {
                 NodoArbol<K, V> sucesor = encontrarMinimo(nodo.derecho);
                 nodo.key = sucesor.key;
@@ -250,7 +250,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Recorrido Pre-Order (raíz → izquierdo → derecho)
-     * Útil para copiar el árbol o guardar la estructura
      */
     public List<Entry<K, V>> preOrder() {
         List<Entry<K, V>> resultado = new ArrayList<>();
@@ -268,7 +267,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Recorrido Post-Order (izquierdo → derecho → raíz)
-     * Útil para eliminar el árbol
      */
     public List<Entry<K, V>> postOrder() {
         List<Entry<K, V>> resultado = new ArrayList<>();
@@ -286,7 +284,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Recorrido por niveles (BFS)
-     * Útil para mostrar el árbol de forma jerárquica
      */
     public List<List<Entry<K, V>>> nivelOrder() {
         List<List<Entry<K, V>>> resultado = new ArrayList<>();
@@ -318,7 +315,7 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return resultado;
     }
     
-    // ============= BÚSQUEDA POR RANGO =============
+    // ============= BÚSQUEDA POR RANGO (CORREGIDA) =============
     
     /**
      * Búsqueda por rango (claves entre k1 y k2, inclusive)
@@ -326,6 +323,13 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     public List<Entry<K, V>> buscarPorRango(K k1, K k2) {
         if (k1 == null || k2 == null) {
             return new ArrayList<>();
+        }
+        
+        // Asegurar que k1 <= k2
+        if (k1.compareTo(k2) > 0) {
+            K temp = k1;
+            k1 = k2;
+            k2 = temp;
         }
         
         List<Entry<K, V>> resultado = new ArrayList<>();
@@ -338,44 +342,35 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
             return;
         }
         
-        int compK1 = k1.compareTo(nodo.key);
-        int compK2 = k2.compareTo(nodo.key);
+        int compIzq = nodo.key.compareTo(k1);
+        int compDer = nodo.key.compareTo(k2);
         
-        // Si k1 es menor que la clave actual, buscar en izquierdo
-        if (compK1 < 0) {
+        // Si la clave actual es mayor que k1, explorar subárbol izquierdo
+        if (compIzq > 0) {
             buscarPorRangoRecursivo(nodo.izquierdo, k1, k2, resultado);
         }
         
-        // Si la clave actual está dentro del rango
-        if (compK1 <= 0 && compK2 >= 0) {
+        // Si la clave actual está dentro del rango [k1, k2], agregarla
+        if (compIzq >= 0 && compDer <= 0) {
             resultado.add(new Entry<>(nodo.key, nodo.value));
         }
         
-        // Si k2 es mayor que la clave actual, buscar en derecho
-        if (compK2 > 0) {
+        // Si la clave actual es menor que k2, explorar subárbol derecho
+        if (compDer < 0) {
             buscarPorRangoRecursivo(nodo.derecho, k1, k2, resultado);
         }
     }
     
     // ============= PROPIEDADES DEL ÁRBOL =============
     
-    /**
-     * Obtiene el tamaño del árbol (número de elementos)
-     */
     public int getTamanio() {
         return tamanio;
     }
     
-    /**
-     * Verifica si el árbol está vacío
-     */
     public boolean estaVacio() {
         return tamanio == 0;
     }
     
-    /**
-     * Obtiene la altura del árbol
-     */
     public int getAltura() {
         return calcularAltura(raiz);
     }
@@ -387,9 +382,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return 1 + Math.max(calcularAltura(nodo.izquierdo), calcularAltura(nodo.derecho));
     }
     
-    /**
-     * Vacía el árbol por completo
-     */
     public void vaciar() {
         raiz = null;
         tamanio = 0;
@@ -397,8 +389,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Verifica si el árbol está balanceado
-     * Un árbol está balanceado si la diferencia de altura entre
-     * subárbol izquierdo y derecho no es mayor a 1 para todos los nodos
      */
     public boolean estaBalanceado() {
         return verificarBalanceado(raiz) != -1;
@@ -421,7 +411,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Obtiene el predecesor in-order de una clave
-     * (el elemento más grande menor que la clave dada)
      */
     public Entry<K, V> obtenerPredecesor(K key) {
         if (!contiene(key)) {
@@ -440,9 +429,8 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
             } else if (comparacion < 0) {
                 nodo = nodo.izquierdo;
             } else {
-                // Si tiene subárbol izquierdo, el predecesor es el máximo de la izquierda
                 if (nodo.izquierdo != null) {
-                    predecesor = encontrarMaximo(nodo.izquierdo);
+                    predecesor = encontrarMinimo(nodo.izquierdo);
                 }
                 break;
             }
@@ -453,7 +441,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
     
     /**
      * Obtiene el sucesor in-order de una clave
-     * (el elemento más pequeño mayor que la clave dada)
      */
     public Entry<K, V> obtenerSucesor(K key) {
         if (!contiene(key)) {
@@ -472,7 +459,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
             } else if (comparacion > 0) {
                 nodo = nodo.derecho;
             } else {
-                // Si tiene subárbol derecho, el sucesor es el mínimo de la derecha
                 if (nodo.derecho != null) {
                     sucesor = encontrarMinimo(nodo.derecho);
                 }
@@ -483,11 +469,8 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return sucesor != null ? new Entry<>(sucesor.key, sucesor.value) : null;
     }
     
-    // ============= MÉTODOS ADICIONALES ÚTILES =============
+    // ============= MÉTODOS ADICIONALES =============
     
-    /**
-     * Obtiene todas las claves del árbol
-     */
     public List<K> obtenerClaves() {
         List<K> claves = new ArrayList<>();
         for (Entry<K, V> entry : inOrder()) {
@@ -496,9 +479,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return claves;
     }
     
-    /**
-     * Obtiene todos los valores del árbol
-     */
     public List<V> obtenerValores() {
         List<V> valores = new ArrayList<>();
         for (Entry<K, V> entry : inOrder()) {
@@ -507,9 +487,6 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return valores;
     }
     
-    /**
-     * Verifica si el árbol es un BST válido
-     */
     public boolean esBSTValido() {
         return esBSTValidoRecursivo(raiz, null, null);
     }
@@ -535,11 +512,8 @@ public class ArbolBinarioBusqueda<K extends Comparable<K>, V> implements Iterabl
         return inOrder().iterator();
     }
     
-    // ============= REPRESENTACIÓN EN STRING =============
+    // ============= REPRESENTACIÓN VISUAL =============
     
-    /**
-     * Representación visual del árbol (para depuración)
-     */
     public String imprimirArbolVisual() {
         StringBuilder sb = new StringBuilder();
         imprimirArbolVisualRecursivo(raiz, 0, sb);
