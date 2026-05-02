@@ -31,16 +31,11 @@ public class Conjunto<T> implements Iterable<T> {
     
     // ============= OPERACIONES BÁSICAS =============
     
-    /**
-     * Agregar un elemento al conjunto (si no existe)
-     * @return true si se agregó, false si ya existía
-     */
     public boolean agregar(T elemento) {
         if (contiene(elemento)) {
             return false;
         }
         
-        // Redimensionar si es necesario
         if ((double) tamanio / buckets.length >= FACTOR_CARGA) {
             redimensionar();
         }
@@ -55,10 +50,6 @@ public class Conjunto<T> implements Iterable<T> {
         return true;
     }
     
-    /**
-     * Eliminar un elemento del conjunto
-     * @return true si se eliminó, false si no existía
-     */
     public boolean eliminar(T elemento) {
         int indice = obtenerIndice(elemento);
         ListaEnlazada<T> bucket = buckets[indice];
@@ -74,9 +65,6 @@ public class Conjunto<T> implements Iterable<T> {
         return eliminado;
     }
     
-    /**
-     * Verificar si un elemento existe en el conjunto
-     */
     public boolean contiene(T elemento) {
         int indice = obtenerIndice(elemento);
         ListaEnlazada<T> bucket = buckets[indice];
@@ -88,23 +76,14 @@ public class Conjunto<T> implements Iterable<T> {
         return bucket.contiene(elemento);
     }
     
-    /**
-     * Obtener el tamaño del conjunto
-     */
     public int getTamanio() {
         return tamanio;
     }
     
-    /**
-     * Verificar si el conjunto está vacío
-     */
     public boolean estaVacio() {
         return tamanio == 0;
     }
     
-    /**
-     * Vaciar el conjunto
-     */
     public void vaciar() {
         for (int i = 0; i < buckets.length; i++) {
             if (buckets[i] != null) {
@@ -116,18 +95,13 @@ public class Conjunto<T> implements Iterable<T> {
     
     // ============= OPERACIONES DE CONJUNTOS =============
     
-    /**
-     * Unión de dos conjuntos
-     */
     public Conjunto<T> union(Conjunto<T> otro) {
         Conjunto<T> resultado = new Conjunto<>();
         
-        // Agregar todos los elementos de este conjunto
         for (T elemento : this) {
             resultado.agregar(elemento);
         }
         
-        // Agregar todos los elementos del otro conjunto
         for (T elemento : otro) {
             resultado.agregar(elemento);
         }
@@ -135,9 +109,6 @@ public class Conjunto<T> implements Iterable<T> {
         return resultado;
     }
     
-    /**
-     * Intersección de dos conjuntos
-     */
     public Conjunto<T> interseccion(Conjunto<T> otro) {
         Conjunto<T> resultado = new Conjunto<>();
         
@@ -150,9 +121,6 @@ public class Conjunto<T> implements Iterable<T> {
         return resultado;
     }
     
-    /**
-     * Diferencia de conjuntos (this - otro)
-     */
     public Conjunto<T> diferencia(Conjunto<T> otro) {
         Conjunto<T> resultado = new Conjunto<>();
         
@@ -165,9 +133,6 @@ public class Conjunto<T> implements Iterable<T> {
         return resultado;
     }
     
-    /**
-     * Verificar si es subconjunto de otro conjunto
-     */
     public boolean esSubconjunto(Conjunto<T> otro) {
         for (T elemento : this) {
             if (!otro.contiene(elemento)) {
@@ -184,7 +149,6 @@ public class Conjunto<T> implements Iterable<T> {
         int nuevaCapacidad = buckets.length * 2;
         ListaEnlazada<T>[] nuevosBuckets = new ListaEnlazada[nuevaCapacidad];
         
-        // Rehashear todos los elementos
         for (ListaEnlazada<T> bucket : buckets) {
             if (bucket != null) {
                 for (T elemento : bucket) {
@@ -200,9 +164,6 @@ public class Conjunto<T> implements Iterable<T> {
         buckets = nuevosBuckets;
     }
     
-    /**
-     * Convertir a lista
-     */
     public ListaEnlazada<T> toList() {
         ListaEnlazada<T> lista = new ListaEnlazada<>();
         for (T elemento : this) {
@@ -211,33 +172,47 @@ public class Conjunto<T> implements Iterable<T> {
         return lista;
     }
     
-    // ============= ITERADOR =============
+    // ============= ITERADOR (CORREGIDO) =============
     
     @Override
     public Iterator<T> iterator() {
         return new Iterator<T>() {
             private int bucketActual = 0;
             private Iterator<T> iteradorActual = null;
+            private int elementosRecorridos = 0;
             
             private void avanzarAlSiguienteBucket() {
-                while (bucketActual < buckets.length && 
-                       (buckets[bucketActual] == null || iteradorActual == null || !iteradorActual.hasNext())) {
-                    if (bucketActual < buckets.length && buckets[bucketActual] != null) {
+                while (bucketActual < buckets.length && elementosRecorridos < tamanio) {
+                    if (buckets[bucketActual] != null && buckets[bucketActual].getTamanio() > 0) {
                         iteradorActual = buckets[bucketActual].iterator();
-                        if (iteradorActual.hasNext()) {
+                        if (iteradorActual != null && iteradorActual.hasNext()) {
                             return;
                         }
                     }
                     bucketActual++;
                 }
+                iteradorActual = null;
             }
             
             @Override
             public boolean hasNext() {
+                if (elementosRecorridos >= tamanio) {
+                    return false;
+                }
+                
                 if (iteradorActual == null) {
                     bucketActual = 0;
                     avanzarAlSiguienteBucket();
                 }
+                
+                if (iteradorActual != null && iteradorActual.hasNext()) {
+                    return true;
+                }
+                
+                // Buscar siguiente bucket
+                bucketActual++;
+                avanzarAlSiguienteBucket();
+                
                 return iteradorActual != null && iteradorActual.hasNext();
             }
             
@@ -246,8 +221,9 @@ public class Conjunto<T> implements Iterable<T> {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
+                
                 T elemento = iteradorActual.next();
-                avanzarAlSiguienteBucket();
+                elementosRecorridos++;
                 return elemento;
             }
         };
