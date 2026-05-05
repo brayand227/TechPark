@@ -3,6 +3,7 @@ package com.techpark.techpark_uq.service;
 import com.techpark.techpark_uq.exception.BusinessException;
 import com.techpark.techpark_uq.model.dto.RegistroVisitanteRequest;
 import com.techpark.techpark_uq.model.dto.UsuarioDTO;
+import com.techpark.techpark_uq.model.entity.RolUsuario;
 import com.techpark.techpark_uq.model.entity.Usuario;
 import com.techpark.techpark_uq.model.entity.Visitante;
 import com.techpark.techpark_uq.repository.UsuarioRepository;
@@ -19,66 +20,63 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UsuarioService {
-    
+
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
     private final PasswordEncoder passwordEncoder;
-    
+
     @Transactional
     public UsuarioDTO registrarVisitante(RegistroVisitanteRequest request) {
-        log.info("Registrando nuevo visitante: {}", request.getEmail());
-        
-        // Validar que no exista el email o documento
+        // Validar email único
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("Ya existe un usuario con ese email", "EMAIL_EXISTENTE");
+            throw new BusinessException("El email ya está registrado", "EMAIL_EXISTENTE");
         }
-        
+
+        // Validar documento único
         if (usuarioRepository.existsByDocumento(request.getDocumento())) {
-            throw new BusinessException("Ya existe un usuario con ese documento", "DOCUMENTO_EXISTENTE");
+            throw new BusinessException("El documento ya está registrado", "DOCUMENTO_EXISTENTE");
         }
-        
-        // Convertir DTO a Entity
-        Visitante visitante = usuarioMapper.toEntity(request);
-        
-        // Encriptar contraseña
-        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            visitante.setPassword(passwordEncoder.encode(request.getPassword()));
-        } else {
-            visitante.setPassword(passwordEncoder.encode("default123")); // Contraseña por defecto
-        }
-        
-        // Establecer ticket activo
+
+        // Crear visitante
+        Visitante visitante = new Visitante();
+        visitante.setNombre(request.getNombre());
+        visitante.setDocumento(request.getDocumento());
+        visitante.setEmail(request.getEmail());
+        visitante.setPassword(passwordEncoder.encode(request.getPassword()));
+        visitante.setEdad(request.getEdad());
+        visitante.setEstatura(request.getEstatura());
+        visitante.setRol(RolUsuario.VISITANTE);
+        visitante.setActivo(true);
+        visitante.setSaldoVirtual(0.0);
         visitante.setTicketActivo(request.getTipoTicket());
-        
-        // Guardar
+        visitante.setUbicacionActual("Entrada Principal");
+
         Visitante saved = usuarioRepository.save(visitante);
-        log.info("Visitante registrado exitosamente con ID: {}", saved.getId());
-        
         return usuarioMapper.toDto(saved);
     }
-    
+
     public UsuarioDTO obtenerUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado", "USUARIO_NO_ENCONTRADO"));
         return usuarioMapper.toDto(usuario);
     }
-    
+
     public UsuarioDTO obtenerUsuarioPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado", "USUARIO_NO_ENCONTRADO"));
         return usuarioMapper.toDto(usuario);
     }
-    
+
     public List<UsuarioDTO> listarTodos() {
         return usuarioRepository.findAll().stream()
                 .map(usuarioMapper::toDto)
                 .collect(Collectors.toList());
     }
-    
+
     public boolean existePorEmail(String email) {
         return usuarioRepository.existsByEmail(email);
     }
-    
+
     public Usuario obtenerUsuarioEntityPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado", "USUARIO_NO_ENCONTRADO"));

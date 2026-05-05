@@ -36,17 +36,19 @@ public class ClimaController {
             alerta,
             "Alerta climática activada. Atracciones afectadas cerradas.",
             request.getRequestURI()
-        ));
+        ));        
     }
     
     /**
      * Desactivar alerta climática (Solo administrador)
      */
+
     @PutMapping("/desactivar/{alertaId}/{administradorId}")
     public ResponseEntity<ApiResponseDTO<AlertaClimaDTO>> desactivarAlerta(
             @PathVariable Long alertaId,
             @PathVariable Long administradorId,
             HttpServletRequest request) {
+
         
         AlertaClimaDTO alerta = climaService.desactivarAlertaClimatica(alertaId, administradorId);
         
